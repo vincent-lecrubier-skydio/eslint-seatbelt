@@ -1,4 +1,5 @@
 import * as fs from "node:fs"
+import { SEATBELT_FROZEN, SEATBELT_KEEP, SeatbeltArgs } from "./SeatbeltConfig"
 
 export type SourceFileName = string
 export type RuleId = string
@@ -61,7 +62,7 @@ function decodeLine(line: string, index: number): SeatbeltStateFileLine {
     }
   } catch (e) {
     if (e instanceof Error) {
-      e.message += `\n  at line ${index + 1}`
+      e.message += `\n  at line ${index + 1}: \`${line.trim()}\``
     }
     throw e
   }
@@ -72,10 +73,7 @@ interface SeatbeltStateFileData {
   lines: SeatbeltStateFileLine[]
 }
 
-interface SeatbeltArgs {
-  noEliminate: Set<RuleId> | "all"
-  allowIncrease: Set<RuleId> | "all"
-}
+let cachedSourceFile: SeatbeltStateFile | undefined
 
 /**
  * The state file is a Map<filename, Map<ruleId, allowedErrors>>.
@@ -84,13 +82,21 @@ interface SeatbeltArgs {
  * conflicts much easier than in a syntactically hierarchical format.
  */
 export class SeatbeltStateFile {
+  static shared(filename: string): SeatbeltStateFile {
+    if (cachedSourceFile && cachedSourceFile.filename === filename) {
+      return cachedSourceFile
+    }
+    cachedSourceFile = SeatbeltStateFile.readSync(filename)
+    return cachedSourceFile
+  }
+
   static readSync(filename: string): SeatbeltStateFile {
     const text = fs.readFileSync(filename, "utf8")
     try {
       return SeatbeltStateFile.parse(filename, text)
     } catch (e) {
       if (e instanceof Error) {
-        e.message += `\n  in seatbelt file "${filename}"`
+        e.message += `\n  in seatbelt file \`${filename}\``
       }
       throw e
     }
@@ -131,7 +137,9 @@ export class SeatbeltStateFile {
     args: SeatbeltArgs,
     ruleToErrorCount: Map<RuleId, number>,
   ) {
-    let changed = false
+    const removedRules = new Set<RuleId>()
+    let increasedRulesCount = 0
+    let decreasedRulesCount = 0
     const maxErrors = this.getMaxErrors(filename) ?? new Map()
 
     ruleToErrorCount.forEach((errorCount, ruleId) => {
@@ -141,32 +149,55 @@ export class SeatbeltStateFile {
       }
 
       if (
-        args.allowIncrease === "all" ||
-        args.allowIncrease.has(ruleId) ||
+        args.allowIncreaseRules === "all" ||
+        args.allowIncreaseRules.has(ruleId) ||
         errorCount < maxErrorCount
       ) {
+        SeatbeltArgs.verboseLog(args, () =>
+          args.frozen
+            ? `${filename}: ${ruleId}: ${SEATBELT_FROZEN}: didn't update max errors: ${maxErrorCount} -> ${errorCount}`
+            : `${filename}: ${ruleId}: update max errors: ${maxErrorCount} -> ${errorCount}`,
+        )
         maxErrors.set(ruleId, errorCount)
-        changed = true
+        if (errorCount > maxErrorCount) {
+          increasedRulesCount++
+        } else {
+          decreasedRulesCount++
+        }
       }
     })
 
-    if (args.noEliminate !== "all") {
-      const noEliminateSet = args.noEliminate
+    if (args.verbose || args.keepRules !== "all") {
       maxErrors.forEach((maxErrorCount, ruleId) => {
-        if (noEliminateSet.has(ruleId)) {
-          return
-        }
-
         if (!ruleToErrorCount.has(ruleId)) {
           return
         }
 
+        if (args.keepRules === "all" || args.keepRules.has(ruleId)) {
+          SeatbeltArgs.verboseLog(
+            args,
+            () =>
+              `${filename}: ${ruleId}: ${SEATBELT_KEEP}: didn't update max errors: ${maxErrorCount} -> ${0}`,
+          )
+          return
+        }
+
+        SeatbeltArgs.verboseLog(args, () =>
+          args.frozen
+            ? `${filename}: ${ruleId}: ${SEATBELT_FROZEN}: didn't update max errors: ${maxErrorCount} -> ${0}`
+            : `${filename}: ${ruleId}: update max errors: ${maxErrorCount} -> ${0}`,
+        )
+
         maxErrors.delete(ruleId)
-        changed = true
+        removedRules.add(ruleId)
       })
     }
 
-    if (changed) {
+    const changed =
+      increasedRulesCount > 0 ||
+      decreasedRulesCount > 0 ||
+      removedRules.size > 0
+    if (changed && !args.frozen) {
       const file = this.data.get(filename)
       if (file) {
         file.maxErrors = maxErrors
@@ -178,6 +209,8 @@ export class SeatbeltStateFile {
       }
       this.changed = true
     }
+
+    return { removedRules, increasedRulesCount, decreasedRulesCount }
   }
 
   toDataString(): string {
@@ -212,7 +245,9 @@ export class SeatbeltStateFile {
     if (this.changed) {
       this.writeSync()
       this.changed = false
+      return { updated: true }
     }
+    return { updated: false }
   }
 
   writeSync() {
