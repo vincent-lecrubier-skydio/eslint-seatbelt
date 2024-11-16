@@ -10,13 +10,13 @@ import {
   SeatbeltConfigWithPwd,
   SeatbeltEnv,
 } from "./SeatbeltConfig"
-import { SeatbeltStateFile } from "./SeatbeltStateFile"
+import { SeatbeltFile } from "./SeatbeltFile"
 import { name } from "../package.json"
 
 const EMPTY_CONFIG: SeatbeltConfig = {}
 
 const argsCache = new WeakMap<SeatbeltConfig, SeatbeltArgs>()
-const seatbeltFileCache = new Map<string, SeatbeltStateFile>()
+const seatbeltFileCache = new Map<string, SeatbeltFile>()
 const mergedConfigCache = new WeakMap<
   /* settings.seatbelt */ SeatbeltConfig,
   WeakMap</* from rule settings override*/ SeatbeltConfig, SeatbeltConfig>
@@ -124,10 +124,10 @@ You may have rule ${configureRuleName} enabled for some files, but not this one.
   return configToArgs(EMPTY_CONFIG)
 }
 
-export function getSeatbeltFile(filename: string): SeatbeltStateFile {
+export function getSeatbeltFile(filename: string): SeatbeltFile {
   let seatbeltFile = seatbeltFileCache.get(filename)
   if (!seatbeltFile) {
-    seatbeltFile = SeatbeltStateFile.readSync(filename)
+    seatbeltFile = SeatbeltFile.readSync(filename)
     seatbeltFileCache.set(filename, seatbeltFile)
   }
   return seatbeltFile

@@ -1,4 +1,4 @@
-import { RuleId } from "./SeatbeltStateFile"
+import { RuleId } from "./SeatbeltFile"
 import { name } from "../package.json"
 
 export const SEATBELT_FILE_NAME = "seatbelt.tsv"

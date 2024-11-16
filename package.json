@@ -2,13 +2,24 @@
   "name": "eslint-seatbelt",
   "version": "0.0.1",
   "description": "Gradually tighten ESLint rules in your codebase",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "peerDependencies": {
+    "eslint": ">=9",
+    "@types/eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "@types/eslint": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.9.0",
     "eslint": "^9.15.0",

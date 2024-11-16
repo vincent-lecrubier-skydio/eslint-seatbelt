@@ -6,19 +6,19 @@ import { SEATBELT_FROZEN, SEATBELT_KEEP, SeatbeltArgs } from "./SeatbeltConfig"
 export type SourceFileName = string
 export type RuleId = string
 
-interface SeatbeltStateFileLine {
+interface SeatbeltFileLine {
   encoded?: string
   filename: SourceFileName
   ruleId: RuleId
   maxErrors: number
 }
 
-function encodeLine(line: SeatbeltStateFileLine): string {
+function encodeLine(line: SeatbeltFileLine): string {
   const { filename, ruleId, maxErrors } = line
   return `${JSON.stringify(filename)}\t${JSON.stringify(ruleId)}\t${maxErrors}\n`
 }
 
-function decodeLine(line: string, index: number): SeatbeltStateFileLine {
+function decodeLine(line: string, index: number): SeatbeltFileLine {
   try {
     const lineParts = line.split("\t")
     if (lineParts.length !== 3) {
@@ -72,7 +72,7 @@ function decodeLine(line: string, index: number): SeatbeltStateFileLine {
 
 interface SeatbeltStateFileData {
   maxErrors?: Map<RuleId, number>
-  lines: SeatbeltStateFileLine[]
+  lines: SeatbeltFileLine[]
 }
 
 /**
@@ -81,11 +81,11 @@ interface SeatbeltStateFileData {
  * or YAML because each line is independent, which makes resolving merge
  * conflicts much easier than in a syntactically hierarchical format.
  */
-export class SeatbeltStateFile {
-  static readSync(filename: string): SeatbeltStateFile {
+export class SeatbeltFile {
+  static readSync(filename: string): SeatbeltFile {
     const text = fs.readFileSync(filename, "utf8")
     try {
-      return SeatbeltStateFile.parse(filename, text)
+      return SeatbeltFile.parse(filename, text)
     } catch (e) {
       if (e instanceof Error) {
         e.message += `\n  in seatbelt file \`${filename}\``
@@ -98,21 +98,21 @@ export class SeatbeltStateFile {
    * Read `filename` if it exists, otherwise create a new empty seatbelt file object
    * that will write to that filename.
    */
-  static openSync(filename: string): SeatbeltStateFile {
+  static openSync(filename: string): SeatbeltFile {
     try {
-      return SeatbeltStateFile.readSync(filename)
+      return SeatbeltFile.readSync(filename)
     } catch (e) {
       if (
         e instanceof Error &&
         (e as NodeJS.ErrnoException).code === "ENOENT"
       ) {
-        return new SeatbeltStateFile(filename, new Map())
+        return new SeatbeltFile(filename, new Map())
       }
       throw e
     }
   }
 
-  static parse(filename: string, text: string): SeatbeltStateFile {
+  static parse(filename: string, text: string): SeatbeltFile {
     const data = new Map<SourceFileName, SeatbeltStateFileData>()
     const lines = text.split("\n").map(decodeLine)
     lines.forEach((line) => {
@@ -123,7 +123,7 @@ export class SeatbeltStateFile {
       }
       fileState.lines.push(line)
     })
-    return new SeatbeltStateFile(filename, data)
+    return new SeatbeltFile(filename, data)
   }
 
   constructor(
@@ -246,7 +246,7 @@ export class SeatbeltStateFile {
   }
 
   readSync() {
-    const nextStateFile = SeatbeltStateFile.readSync(this.filename)
+    const nextStateFile = SeatbeltFile.readSync(this.filename)
     this.data = nextStateFile.data
     this.changed = false
   }
@@ -273,7 +273,7 @@ export class SeatbeltStateFile {
   }
 }
 
-function parseMaxErrors(lines: SeatbeltStateFileLine[]): Map<RuleId, number> {
+function parseMaxErrors(lines: SeatbeltFileLine[]): Map<RuleId, number> {
   const maxErrors = new Map<RuleId, number>()
   lines.forEach((line) => {
     maxErrors.set(line.ruleId, line.maxErrors)

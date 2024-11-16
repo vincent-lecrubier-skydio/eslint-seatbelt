@@ -1,6 +1,6 @@
 import type { Linter } from "eslint"
 import packageJson from "../package.json"
-import { RuleId, SeatbeltStateFile } from "./SeatbeltStateFile"
+import { RuleId, SeatbeltFile } from "./SeatbeltFile"
 import {
   SEATBELT_FROZEN,
   SEATBELT_INCREASE,
@@ -91,7 +91,7 @@ function createOnce<T>(): (value: T) => boolean {
 
 function transformMessages(
   args: SeatbeltArgs,
-  seatbeltFile: SeatbeltStateFile,
+  seatbeltFile: SeatbeltFile,
   filename: string,
   messages: Linter.LintMessage[],
   ruleToErrorCount: Map<RuleId, number>,
@@ -201,7 +201,7 @@ function countRuleIds(messages: Linter.LintMessage[]): Map<RuleId, number> {
 
 function maybeWriteStateUpdate(
   args: SeatbeltArgs,
-  stateFile: SeatbeltStateFile,
+  stateFile: SeatbeltFile,
   filename: string,
   ruleToErrorCount: Map<RuleId, number>,
 ): Linter.LintMessage[] | undefined {

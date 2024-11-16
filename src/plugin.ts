@@ -1,11 +1,15 @@
 import type { ESLint, Linter } from "eslint"
 import packageJson from "../package.json"
-import { SeatbeltStateFile } from "./SeatbeltStateFile"
+import { SeatbeltFile } from "./SeatbeltFile"
 import { SEATBELT_FROZEN, SeatbeltArgs } from "./SeatbeltConfig"
 import { SeatbeltProcessor } from "./SeatbeltProcessor"
 import { configure } from "./rules/configure"
 const { name, version } = packageJson
 
+/**
+ * See the package README for usage instructions.
+ * https://github.com/justjake/eslint-seatbelt#readme
+ */
 const plugin = {
   meta: {
     name,

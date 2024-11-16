@@ -17,15 +17,23 @@ export const configure: Rule.RuleModule = {
     schema: SeatbeltConfigSchema,
   },
   create(context) {
-    const eslintSharedConfig = context.settings?.seatbelt as
+    const eslintSharedConfigViaShortName = context.settings?.seatbelt as
       | SeatbeltConfig
       | undefined
+    const eslintSharedConfigViaPackageName = context.settings?.[name] as
+      | SeatbeltConfig
+      | undefined
+    const eslintSharedConfig =
+      eslintSharedConfigViaShortName ?? eslintSharedConfigViaPackageName
     const fileOverrideConfig = context.options[0] as SeatbeltConfig | undefined
     const args = pluginGlobals.ruleOverrideConfigToArgs(
       eslintSharedConfig,
       fileOverrideConfig,
     )
-    pluginGlobals.pushFileArgs(context.getFilename(), args)
+    pluginGlobals.pushFileArgs(
+      context.getFilename?.() ?? context.filename,
+      args,
+    )
 
     // No linting happening here.
     return {}
