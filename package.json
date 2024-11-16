@@ -2,11 +2,25 @@
   "name": "eslint-seatbelt",
   "version": "0.0.1",
   "description": "Gradually tighten ESLint rules in your codebase",
+  "keywords": [
+    "eslint",
+    "incremental",
+    "gradual",
+    "workflow",
+    "processor",
+    "linting"
+  ],
+  "author": {
+    "name": "Jake Teton-Landis",
+    "url": "https://jake.tl"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justjake/eslint-seatbelt.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "peerDependencies": {
     "eslint": ">=9",
