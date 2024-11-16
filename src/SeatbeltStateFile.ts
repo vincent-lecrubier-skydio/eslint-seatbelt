@@ -1,4 +1,6 @@
+import * as os from "node:os"
 import * as fs from "node:fs"
+import * as nodePath from "node:path"
 import { SEATBELT_FROZEN, SEATBELT_KEEP, SeatbeltArgs } from "./SeatbeltConfig"
 
 export type SourceFileName = string
@@ -87,6 +89,24 @@ export class SeatbeltStateFile {
     } catch (e) {
       if (e instanceof Error) {
         e.message += `\n  in seatbelt file \`${filename}\``
+      }
+      throw e
+    }
+  }
+
+  /**
+   * Read `filename` if it exists, otherwise create a new empty seatbelt file object
+   * that will write to that filename.
+   */
+  static openSync(filename: string): SeatbeltStateFile {
+    try {
+      return SeatbeltStateFile.readSync(filename)
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        (e as NodeJS.ErrnoException).code === "ENOENT"
+      ) {
+        return new SeatbeltStateFile(filename, new Map())
       }
       throw e
     }
@@ -242,10 +262,14 @@ export class SeatbeltStateFile {
 
   writeSync() {
     const dataString = this.toDataString()
-    const destination = this.filename
-    const tempFile = `${destination}.tmp${process.pid}`
-    fs.writeFileSync(tempFile, dataString)
-    fs.renameSync(tempFile, destination)
+    const { dir, base } = nodePath.parse(this.filename)
+    const tempFile = nodePath.join(
+      os.tmpdir(),
+      `.${base}.wip${process.pid}.${Date.now()}.tmp`,
+    )
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(tempFile, dataString, "utf8")
+    fs.renameSync(tempFile, this.filename)
   }
 }
 

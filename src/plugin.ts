@@ -6,9 +6,6 @@ import { SeatbeltProcessor } from "./SeatbeltProcessor"
 import { configure } from "./rules/configure"
 const { name, version } = packageJson
 
-/**
- *
- */
 const plugin = {
   meta: {
     name,
@@ -58,7 +55,7 @@ const plugin = {
      */
     "enable-legacy": createLegacyConfig(),
   },
-} satisfies ESLint.Plugin
+} satisfies ESLint.Plugin & ESLint.Plugin
 
 function createESLint9Config() {
   const ownPlugin: ESLint.Plugin = plugin

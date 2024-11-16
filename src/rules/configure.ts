@@ -25,7 +25,7 @@ export const configure: Rule.RuleModule = {
       eslintSharedConfig,
       fileOverrideConfig,
     )
-    pluginGlobals.setFileArgs(context.getFilename(), args)
+    pluginGlobals.pushFileArgs(context.getFilename(), args)
 
     // No linting happening here.
     return {}

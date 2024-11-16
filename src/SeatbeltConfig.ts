@@ -468,6 +468,9 @@ export const SeatbeltArgs = {
     }
     return logStderr
   },
+  ruleSetHas(ruleSet: "all" | Set<RuleId>, ruleId: RuleId): boolean {
+    return ruleSet === "all" || ruleSet.has(ruleId)
+  },
   verboseLog(args: SeatbeltArgs, makeMessage: () => string | unknown[]) {
     if (args.verbose) {
       const message = makeMessage()

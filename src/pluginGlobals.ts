@@ -26,6 +26,7 @@ let envFallbackConfig: SeatbeltConfig | undefined
 let envOverrideConfig: SeatbeltConfigWithPwd | undefined
 let hasAnyEnvVars = false
 let lastLintedFile: { filename: string; args: SeatbeltArgs } | undefined
+const temporaryFileArgs = new Map<string, SeatbeltArgs>()
 
 function getProcessEnvFallbackConfig(): SeatbeltConfig {
   return (
@@ -94,14 +95,18 @@ Docs: https://github.com/justjake/${name}#configure`,
   )
 }
 
-export function setFileArgs(filename: string, args: SeatbeltArgs) {
+export function pushFileArgs(filename: string, args: SeatbeltArgs) {
   lastLintedFile = { filename, args }
+  temporaryFileArgs.set(filename, args)
 }
 
-export function getFileArgs(filename: string): SeatbeltArgs {
-  if (lastLintedFile?.filename === filename) {
-    return lastLintedFile.args
+export function popFileArgs(filename: string): SeatbeltArgs {
+  const args = temporaryFileArgs.get(filename)
+  temporaryFileArgs.delete(filename)
+  if (args) {
+    return args
   }
+
   if (!hasAnyEnvVars) {
     if (lastLintedFile) {
       logStderr(
@@ -119,9 +124,7 @@ You may have rule ${configureRuleName} enabled for some files, but not this one.
   return configToArgs(EMPTY_CONFIG)
 }
 
-export function getSeatbeltFile(
-  filename: string,
-): SeatbeltStateFile | undefined {
+export function getSeatbeltFile(filename: string): SeatbeltStateFile {
   let seatbeltFile = seatbeltFileCache.get(filename)
   if (!seatbeltFile) {
     seatbeltFile = SeatbeltStateFile.readSync(filename)
