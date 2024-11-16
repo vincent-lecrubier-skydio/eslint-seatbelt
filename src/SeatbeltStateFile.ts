@@ -73,8 +73,6 @@ interface SeatbeltStateFileData {
   lines: SeatbeltStateFileLine[]
 }
 
-let cachedSourceFile: SeatbeltStateFile | undefined
-
 /**
  * The state file is a Map<filename, Map<ruleId, allowedErrors>>.
  * It is stored in "tab separated json" format. This format is chosen over JSON
@@ -82,14 +80,6 @@ let cachedSourceFile: SeatbeltStateFile | undefined
  * conflicts much easier than in a syntactically hierarchical format.
  */
 export class SeatbeltStateFile {
-  static shared(filename: string): SeatbeltStateFile {
-    if (cachedSourceFile && cachedSourceFile.filename === filename) {
-      return cachedSourceFile
-    }
-    cachedSourceFile = SeatbeltStateFile.readSync(filename)
-    return cachedSourceFile
-  }
-
   static readSync(filename: string): SeatbeltStateFile {
     const text = fs.readFileSync(filename, "utf8")
     try {

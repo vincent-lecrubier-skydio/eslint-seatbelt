@@ -1,4 +1,5 @@
 import { RuleId } from "./SeatbeltStateFile"
+import { name } from "../package.json"
 
 export const SEATBELT_FILE_NAME = "seatbelt.tsv"
 
@@ -11,6 +12,54 @@ export const SEATBELT_DISABLE = "SEATBELT_DISABLE"
 export const SEATBELT_THREADSAFE = "SEATBELT_THREADSAFE"
 export const SEATBELT_VERBOSE = "SEATBELT_VERBOSE"
 
+/**
+ * Configuration for seatbelt can be provided in a few ways:
+ *
+ * 1. Defined in the shared `settings` object in your ESLint config. This
+ *    requires also configuring the `eslint-seatbelt/configure` rule.
+ *
+ *     ```js
+ *     // in eslint.config.js
+ *     const config = [
+ *       {
+ *         settings: {
+ *           seatbelt: {
+ *             // ...
+ *           }
+ *         },
+ *         rules: {
+ *           "eslint-seatbelt/configure": "error",
+ *         }
+ *       }
+ *     ]
+ *     ```
+ *
+ * 2. Using the `eslint-seatbelt/configure` rule in your ESLint config.
+ *    This can be used to override settings for specific files in legacy ESLint configs.
+ *    Any configuration provided here will override the shared `settings` object.
+ *
+ *     ```js
+ *     // in .eslintrc.js
+ *     module.exports = {
+ *       rules: {
+ *         "eslint-seatbelt/configure": "error",
+ *       },
+ *       overrides: [
+ *         {
+ *           files: ["some/path/*"],
+ *           rules: {
+ *             "eslint-seatbelt/configure": ["error", { seatbeltFile: "some/path/seatbelt.tsv" }]
+ *           },
+ *         },
+ *       ],
+ *     }
+ *     ```
+ * 3. The settings in config files can be overridden with environment variables when running `eslint` or other tools.
+ *
+ *    ```bash
+ *    SEATBELT_FILE=some/path/seatbelt.tsv SEATBELT_FROZEN=1 eslint
+ *    ```
+ */
 export interface SeatbeltConfig {
   /**
    * The seatbelt file stores the max error counts allowed for each file. Should
@@ -258,6 +307,10 @@ export interface SeatbeltConfig {
   verbose?: boolean | "stdout" | "stderr" | ((...message: unknown[]) => void)
 }
 
+export interface SeatbeltConfigWithPwd extends SeatbeltConfig {
+  pwd: string
+}
+
 export const SeatbeltConfig = {
   withEnvOverrides(
     config: SeatbeltConfig,
@@ -277,8 +330,8 @@ export const SeatbeltConfig = {
     }
   },
 
-  fromEnvOverrides(env: SeatbeltEnv): SeatbeltConfig & { pwd: string } {
-    const config: SeatbeltConfig & { pwd: string } = {
+  fromEnvOverrides(env: SeatbeltEnv): SeatbeltConfigWithPwd {
+    const config: SeatbeltConfigWithPwd = {
       pwd: env[SEATBELT_PWD] || process.cwd(),
     }
 
@@ -368,8 +421,10 @@ export interface FallbackEnv {
 
 var sharedArgs: SeatbeltArgs | undefined
 
-export const stdout = (...message: unknown[]) => console.log(...message)
-export const stderr = (...message: unknown[]) => console.error(...message)
+export const logStdout = (...message: unknown[]) =>
+  console.log(`[${name}]:`, ...message)
+export const logStderr = (...message: unknown[]) =>
+  console.error(`[${name}]:`, ...message)
 
 export const SeatbeltArgs = {
   get currentProcess(): SeatbeltArgs {
@@ -409,9 +464,9 @@ export const SeatbeltArgs = {
       return args.verbose
     }
     if (args.verbose === "stdout") {
-      return stdout
+      return logStdout
     }
-    return stderr
+    return logStderr
   },
   verboseLog(args: SeatbeltArgs, makeMessage: () => string | unknown[]) {
     if (args.verbose) {
