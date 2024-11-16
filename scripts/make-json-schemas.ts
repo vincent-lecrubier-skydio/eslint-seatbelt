@@ -8,11 +8,9 @@ import { format } from "prettier"
 async function main() {
   const root = resolve(__dirname, "..")
 
-  const program = TJS.getProgramFromFiles(
-    [resolve(root, "src/SeatbeltConfig.ts")],
-    undefined,
-    root,
-  )
+  const program = TJS.programFromConfig(resolve(root, "tsconfig.json"), [
+    resolve(root, "src/SeatbeltConfig.ts"),
+  ])
 
   const filepath = resolve(root, "src/jsonSchema/SeatbeltConfigSchema.ts")
 
