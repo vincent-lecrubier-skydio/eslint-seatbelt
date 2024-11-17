@@ -14,7 +14,7 @@ interface SeatbeltFileLine {
   maxErrors: number
 }
 
-type SeatbeltFileJson = Record<SourceFileName, Record<RuleId, number>>
+export type SeatbeltFileJson = Record<SourceFileName, Record<RuleId, number>>
 
 function encodeLine(line: SeatbeltFileLine): string {
   const { filename, ruleId, maxErrors } = line
