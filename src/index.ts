@@ -1,7 +1,5 @@
 import type { ESLint, Linter } from "eslint"
 import packageJson from "../package.json"
-import { SeatbeltFile } from "./SeatbeltFile"
-import { SEATBELT_FROZEN, SeatbeltArgs } from "./SeatbeltConfig"
 import { SeatbeltProcessor } from "./SeatbeltProcessor"
 import { configure } from "./rules/configure"
 const { name, version } = packageJson

@@ -7,5 +7,6 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   splitting: true,
+  cjsInterop: true,
   target: "node18",
 })

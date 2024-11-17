@@ -3,7 +3,7 @@
 import { writeFileSync } from "node:fs"
 import { resolve } from "node:path"
 import * as TJS from "typescript-json-schema"
-import { format } from "prettier"
+import * as prettier from "prettier"
 
 async function main() {
   const root = resolve(__dirname, "..")
@@ -23,7 +23,8 @@ type Schema = Rule.RuleMetaData["schema"]
 
 export const SeatbeltConfigSchema = ${JSON.stringify(schema, null, 2)} satisfies Schema
 `
-  const formatted = await format(ts, { filepath })
+  const config = await prettier.resolveConfig(filepath)
+  const formatted = await prettier.format(ts, { filepath, ...config })
 
   writeFileSync(filepath, formatted)
 }
