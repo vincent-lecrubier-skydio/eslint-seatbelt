@@ -18,6 +18,7 @@ export default tseslint.config(
   seatbelt.configs.enable,
   {
     rules: {
+      "@typescript-eslint/ban-ts-comment": "error",
       "no-console": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
