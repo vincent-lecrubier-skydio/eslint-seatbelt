@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "./scripts/make-json-schemas.ts && tsc && tsup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test --require tsx/cjs $(find src -name '*.test.ts')"
   },
   "types": "dist/index.d.ts",
   "main": "dist/index.js",
@@ -58,6 +58,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
+    "@typescript-eslint/rule-tester": "^8.14.0",
+    "@typescript-eslint/utils": "^8.14.0",
     "eslint": "^9.15.0",
     "prettier": "^3.3.3",
     "tsup": "^8.3.5",

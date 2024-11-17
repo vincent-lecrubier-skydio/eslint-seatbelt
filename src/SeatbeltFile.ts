@@ -114,7 +114,10 @@ export class SeatbeltFile {
 
   static parse(filename: string, text: string): SeatbeltFile {
     const data = new Map<SourceFileName, SeatbeltStateFileData>()
-    const lines = text.split("\n").map(decodeLine)
+    const lines = text
+      .split(/(?<=\n)/)
+      .filter(Boolean)
+      .map(decodeLine)
     lines.forEach((line) => {
       let fileState = data.get(line.filename)
       if (!fileState) {
@@ -150,7 +153,7 @@ export class SeatbeltFile {
     const removedRules = new Set<RuleId>()
     let increasedRulesCount = 0
     let decreasedRulesCount = 0
-    const maxErrors = this.getMaxErrors(filename) ?? new Map()
+    const maxErrors = this.getMaxErrors(filename) ?? new Map<RuleId, number>()
 
     ruleToErrorCount.forEach((errorCount, ruleId) => {
       const maxErrorCount = maxErrors.get(ruleId) ?? 0
@@ -159,9 +162,8 @@ export class SeatbeltFile {
       }
 
       if (
-        args.allowIncreaseRules === "all" ||
-        args.allowIncreaseRules.has(ruleId) ||
-        errorCount < maxErrorCount
+        errorCount < maxErrorCount ||
+        SeatbeltArgs.ruleSetHas(args.allowIncreaseRules, ruleId)
       ) {
         SeatbeltArgs.verboseLog(args, () =>
           args.frozen
@@ -179,11 +181,14 @@ export class SeatbeltFile {
 
     if (args.verbose || args.keepRules !== "all") {
       maxErrors.forEach((maxErrorCount, ruleId) => {
-        if (!ruleToErrorCount.has(ruleId)) {
+        const shouldRemove =
+          maxErrorCount === 0 || !ruleToErrorCount.has(ruleId)
+
+        if (!shouldRemove) {
           return
         }
 
-        if (args.keepRules === "all" || args.keepRules.has(ruleId)) {
+        if (SeatbeltArgs.ruleSetHas(args.keepRules, ruleId)) {
           SeatbeltArgs.verboseLog(
             args,
             () =>
