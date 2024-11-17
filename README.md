@@ -13,12 +13,12 @@ Some tools require complicated workflows invasive wrapper scripts, some going so
 
 - Many tools in this genre 
 
-Error counts are stored in a single `seatbelt.tsv` file in a line-oriented format that minimizes (but doesn't totally eliminate) merge pain.
+Error counts are stored in a single `eslint.seatbelt.tsv` file in a line-oriented format that minimizes (but doesn't totally eliminate) merge pain.
 
 
 
 
-eslint-seatbelt tracks the allowed number of errors per file in the `seatbelt.tsv` file, and reduces the count whenever you run `eslint` after fixing an error. Pair with lint-on-save in your editor or with pre-commit hooks to fully automate the process, although its not required: in CI, `eslint` verifies the `seatbelt.tsv` file is up-to-date.
+eslint-seatbelt tracks the allowed number of errors per file in the `eslint.seatbelt.tsv` file, and reduces the count whenever you run `eslint` after fixing an error. Pair with lint-on-save in your editor or with pre-commit hooks to fully automate the process, although its not required: in CI, `eslint` verifies the `eslint.seatbelt.tsv` file is up-to-date.
 
 ## Setup
 
@@ -76,7 +76,7 @@ seatbelt views eslint rules configured entirely in "warning" mode pointless: the
 
 ### Configuration
 
-No further configuration is required to get started. By default eslint-seatbelt will track errors in the `seatbelt.tsv` file in the current working directory.
+No further configuration is required to get started. By default eslint-seatbelt will track errors in the `eslint.seatbelt.tsv` file in the current working directory.
 
 
 

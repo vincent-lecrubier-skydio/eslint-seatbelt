@@ -2,7 +2,7 @@ import { RuleId } from "./SeatbeltFile"
 import { name } from "../package.json"
 import path from "node:path"
 
-export const SEATBELT_FILE_NAME = "seatbelt.tsv"
+export const SEATBELT_FILE_NAME = "eslint.eslint.seatbelt.tsv"
 
 export const SEATBELT_FROZEN = "SEATBELT_FROZEN"
 export const SEATBELT_INCREASE = "SEATBELT_INCREASE"
@@ -62,7 +62,7 @@ const ENV_VARS = {
  *         {
  *           files: ["some/path/*"],
  *           rules: {
- *             "eslint-seatbelt/configure": ["error", { seatbeltFile: "some/path/seatbelt.tsv" }]
+ *             "eslint-seatbelt/configure": ["error", { seatbeltFile: "some/path/eslint.seatbelt.tsv" }]
  *           },
  *         },
  *       ],
@@ -71,7 +71,7 @@ const ENV_VARS = {
  * 3. The settings in config files can be overridden with environment variables when running `eslint` or other tools.
  *
  *    ```bash
- *    SEATBELT_FILE=some/path/seatbelt.tsv SEATBELT_FROZEN=1 eslint
+ *    SEATBELT_FILE=some/path/eslint.seatbelt.tsv SEATBELT_FROZEN=1 eslint
  *    ```
  */
 export interface SeatbeltConfig {
@@ -79,7 +79,7 @@ export interface SeatbeltConfig {
    * The seatbelt file stores the max error counts allowed for each file. Should
    * be an absolute path.
    *
-   * If not provided, $SEATBELT_PWD/seatbelt.tsv or $PWD/seatbelt.tsv will be used.
+   * If not provided, $SEATBELT_PWD/eslint.seatbelt.tsv or $PWD/eslint.seatbelt.tsv will be used.
    *
    * ```js
    * // in eslint.config.js
@@ -88,9 +88,9 @@ export interface SeatbeltConfig {
    *     settings: {
    *       seatbelt: {
    *         // commonjs
-   *         seatbeltFile: `${__dirname}/seatbelt.tsv`
+   *         seatbeltFile: `${__dirname}/eslint.seatbelt.tsv`
    *         // esm
-   *         seatbeltFile: new URL('./seatbelt.tsv', import.meta.url).pathname
+   *         seatbeltFile: new URL('./eslint.seatbelt.tsv', import.meta.url).pathname
    *       }
    *     }
    *   }

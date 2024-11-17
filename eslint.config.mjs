@@ -17,11 +17,6 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   seatbelt.configs.enable,
   {
-    settings: {
-      seatbelt: {
-        seatbeltFile: ".seatbelt.tsv",
-      },
-    },
     rules: {
       "no-console": "error",
       "@typescript-eslint/no-unused-vars": [

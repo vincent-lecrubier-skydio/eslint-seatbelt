@@ -77,6 +77,13 @@ interface SeatbeltStateFileData {
   lines: SeatbeltFileLine[]
 }
 
+const COMMENT_LINE_REGEX = /^\s*#/
+
+const DEFAULT_FILE_HEADER = `
+# ${name} temporarily allowed errors
+# docs: https://github.com/justjake/${name}#readme
+`.trim()
+
 /**
  * The state file is a Map<filename, Map<ruleId, allowedErrors>>.
  * It is stored in "tab separated json" format. This format is chosen over JSON
@@ -111,10 +118,16 @@ export class SeatbeltFile {
 
   static parse(filename: string, text: string): SeatbeltFile {
     const data = new Map<SourceFileName, SeatbeltStateFileData>()
-    const lines = text
-      .split(/(?<=\n)/)
-      .filter(Boolean)
+    const split = text.split(/(?<=\n)/)
+    const lines = split
+      .filter(
+        (line) =>
+          line !== "" && line !== "\n" && !COMMENT_LINE_REGEX.test(line),
+      )
       .map(decodeLine)
+    const comments = split
+      .filter((line) => COMMENT_LINE_REGEX.test(line))
+      .join("")
     lines.forEach((line) => {
       let fileState = data.get(line.filename)
       if (!fileState) {
@@ -123,7 +136,7 @@ export class SeatbeltFile {
       }
       fileState.lines.push(line)
     })
-    return new SeatbeltFile(filename, data)
+    return new SeatbeltFile(filename, data, comments.trim())
   }
 
   static fromJSON(filename: string, json: SeatbeltFileJson): SeatbeltFile {
@@ -139,6 +152,7 @@ export class SeatbeltFile {
   constructor(
     public filename: string,
     protected data: Map<SourceFileName, SeatbeltStateFileData>,
+    public readonly comments: string = DEFAULT_FILE_HEADER,
   ) {}
 
   public changed = false
@@ -262,7 +276,7 @@ export class SeatbeltFile {
       })
     })
     lines.sort()
-    return lines.join("")
+    return this.comments + "\n\n" + lines.join("")
   }
 
   readSync() {

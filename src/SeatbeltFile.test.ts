@@ -99,7 +99,7 @@ describe("SeatbeltFile", () => {
   })
 
   test("toJSON() and fromJSON() roundtrip", () => {
-    const file = SeatbeltFile.fromJSON("/test/seatbelt.tsv", {
+    const file = SeatbeltFile.fromJSON("/test/eslint.seatbelt.tsv", {
       "src/fileA.ts": {
         "@typescript-eslint/no-explicit-any": 5,
         "@typescript-eslint/no-unused-vars": 3,
@@ -121,7 +121,10 @@ describe("SeatbeltFile", () => {
       },
     })
 
-    const roundtrippedFile = SeatbeltFile.fromJSON("/test/seatbelt.tsv", json)
+    const roundtrippedFile = SeatbeltFile.fromJSON(
+      "/test/eslint.seatbelt.tsv",
+      json,
+    )
     assert.deepStrictEqual(roundtrippedFile.toJSON(), json)
   })
 })
