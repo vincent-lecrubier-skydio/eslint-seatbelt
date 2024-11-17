@@ -2,7 +2,7 @@ import { RuleId } from "./SeatbeltFile"
 import { name } from "../package.json"
 import path from "node:path"
 
-export const SEATBELT_FILE_NAME = "eslint.eslint.seatbelt.tsv"
+export const SEATBELT_FILE_NAME = "eslint.seatbelt.tsv"
 
 export const SEATBELT_FROZEN = "SEATBELT_FROZEN"
 export const SEATBELT_INCREASE = "SEATBELT_INCREASE"
