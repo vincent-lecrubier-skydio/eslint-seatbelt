@@ -17,6 +17,9 @@ export const configure: Rule.RuleModule = {
     schema: [SeatbeltConfigSchema],
   },
   create(context) {
+    const filename = context.getFilename?.() ?? context.filename
+    pluginGlobals.onConfigureRule(filename)
+
     const eslintSharedConfigViaShortName = context.settings?.seatbelt as
       | SeatbeltConfig
       | undefined
@@ -30,10 +33,7 @@ export const configure: Rule.RuleModule = {
       eslintSharedConfig,
       fileOverrideConfig,
     )
-    pluginGlobals.pushFileArgs(
-      context.getFilename?.() ?? context.filename,
-      args,
-    )
+    pluginGlobals.pushFileArgs(filename, args)
 
     // No linting happening here.
     return {}

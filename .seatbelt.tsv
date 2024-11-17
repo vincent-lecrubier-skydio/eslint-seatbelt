@@ -1,0 +1,7 @@
+"/Users/jitl/src/eslint-seatbelt/scripts/make-json-schemas.ts"	"no-console"	1
+"/Users/jitl/src/eslint-seatbelt/src/FileLock.ts"	"@typescript-eslint/no-unused-vars"	1
+"/Users/jitl/src/eslint-seatbelt/src/SeatbeltConfig.ts"	"no-console"	2
+"/Users/jitl/src/eslint-seatbelt/src/SeatbeltProcessor.ts"	"@typescript-eslint/no-unused-vars"	1
+"/Users/jitl/src/eslint-seatbelt/src/index.ts"	"@typescript-eslint/no-explicit-any"	2
+"/Users/jitl/src/eslint-seatbelt/src/index.ts"	"@typescript-eslint/no-unused-vars"	3
+"/Users/jitl/src/eslint-seatbelt/src/pluginGlobals.ts"	"@typescript-eslint/no-unused-vars"	2

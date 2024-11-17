@@ -1,8 +1,15 @@
 import * as os from "node:os"
 import * as fs from "node:fs"
 import * as nodePath from "node:path"
-import { SEATBELT_FROZEN, SEATBELT_KEEP, SeatbeltArgs } from "./SeatbeltConfig"
+import {
+  formatFilename,
+  formatRuleId,
+  SEATBELT_FROZEN,
+  SEATBELT_KEEP,
+  SeatbeltArgs,
+} from "./SeatbeltConfig"
 import { name } from "../package.json"
+import { appendErrorContext, isErrno } from "./errorHanding"
 
 export type SourceFileName = string
 export type RuleId = string
@@ -33,9 +40,7 @@ function decodeLine(line: string, index: number): SeatbeltFileLine {
     try {
       filename = JSON.parse(lineParts[0])
     } catch (e) {
-      if (e instanceof Error) {
-        e.message += `\n  at tab-separated column 1 (filename)`
-      }
+      appendErrorContext(e, "at tab-separated column 1 (filename)")
       throw e
     }
 
@@ -43,9 +48,7 @@ function decodeLine(line: string, index: number): SeatbeltFileLine {
     try {
       ruleId = JSON.parse(lineParts[1])
     } catch (e) {
-      if (e instanceof Error) {
-        e.message += `\n  at tab-separated column 2 (RuleId)`
-      }
+      appendErrorContext(e, "at tab-separated column 2 (RuleId)")
       throw e
     }
 
@@ -53,9 +56,7 @@ function decodeLine(line: string, index: number): SeatbeltFileLine {
     try {
       maxErrors = JSON.parse(lineParts[2])
     } catch (e) {
-      if (e instanceof Error) {
-        e.message += `\n  at tab-separated column 3 (maxErrors)`
-      }
+      appendErrorContext(e, "at tab-separated column 3 (maxErrors)")
       throw e
     }
 
@@ -66,9 +67,7 @@ function decodeLine(line: string, index: number): SeatbeltFileLine {
       maxErrors,
     }
   } catch (e) {
-    if (e instanceof Error) {
-      e.message += `\n  at line ${index + 1}: \`${line.trim()}\``
-    }
+    appendErrorContext(e, `at line ${index + 1}: \`${line.trim()}\``)
     throw e
   }
 }
@@ -90,9 +89,7 @@ export class SeatbeltFile {
     try {
       return SeatbeltFile.parse(filename, text)
     } catch (e) {
-      if (e instanceof Error) {
-        e.message += `\n  in seatbelt file \`${filename}\``
-      }
+      appendErrorContext(e, `in seatbelt file \`${filename}\``)
       throw e
     }
   }
@@ -105,11 +102,7 @@ export class SeatbeltFile {
     try {
       return SeatbeltFile.readSync(filename)
     } catch (e) {
-      console.log("open sync error", e)
-      if (
-        e instanceof Error &&
-        (e as NodeJS.ErrnoException).code === "ENOENT"
-      ) {
+      if (isErrno(e, "ENOENT")) {
         return new SeatbeltFile(filename, new Map())
       }
       throw e
@@ -150,7 +143,13 @@ export class SeatbeltFile {
 
   public changed = false
 
-  getMaxErrors(filename: SourceFileName): Map<RuleId, number> | undefined {
+  filenames(): IterableIterator<SourceFileName> {
+    return this.data.keys()
+  }
+
+  getMaxErrors(
+    filename: SourceFileName,
+  ): ReadonlyMap<RuleId, number> | undefined {
     const fileState = this.data.get(filename)
     if (!fileState) {
       return undefined
@@ -162,12 +161,14 @@ export class SeatbeltFile {
   updateMaxErrors(
     filename: SourceFileName,
     args: SeatbeltArgs,
-    ruleToErrorCount: Map<RuleId, number>,
+    ruleToErrorCount: ReadonlyMap<RuleId, number>,
   ) {
     const removedRules = new Set<RuleId>()
     let increasedRulesCount = 0
     let decreasedRulesCount = 0
-    const maxErrors = this.getMaxErrors(filename) ?? new Map<RuleId, number>()
+    this.getMaxErrors(filename)
+    const maxErrors =
+      this.data.get(filename)?.maxErrors ?? new Map<RuleId, number>()
 
     ruleToErrorCount.forEach((errorCount, ruleId) => {
       const maxErrorCount = maxErrors.get(ruleId) ?? 0
@@ -181,8 +182,8 @@ export class SeatbeltFile {
       ) {
         SeatbeltArgs.verboseLog(args, () =>
           args.frozen
-            ? `${filename}: ${ruleId}: ${SEATBELT_FROZEN}: didn't update max errors: ${maxErrorCount} -> ${errorCount}`
-            : `${filename}: ${ruleId}: update max errors: ${maxErrorCount} -> ${errorCount}`,
+            ? `${formatFilename(filename)}: ${formatRuleId(ruleId)}: ${SEATBELT_FROZEN}: didn't update max errors ${maxErrorCount} -> ${errorCount}`
+            : `${formatFilename(filename)}: ${formatRuleId(ruleId)}: update max errors ${maxErrorCount} -> ${errorCount}`,
         )
         maxErrors.set(ruleId, errorCount)
         if (errorCount > maxErrorCount) {
@@ -206,15 +207,15 @@ export class SeatbeltFile {
           SeatbeltArgs.verboseLog(
             args,
             () =>
-              `${filename}: ${ruleId}: ${SEATBELT_KEEP}: didn't update max errors: ${maxErrorCount} -> ${0}`,
+              `${formatFilename(filename)}: ${formatRuleId(ruleId)}: ${SEATBELT_KEEP}: didn't update max errors ${maxErrorCount} -> ${0}`,
           )
           return
         }
 
         SeatbeltArgs.verboseLog(args, () =>
           args.frozen
-            ? `${filename}: ${ruleId}: ${SEATBELT_FROZEN}: didn't update max errors: ${maxErrorCount} -> ${0}`
-            : `${filename}: ${ruleId}: update max errors: ${maxErrorCount} -> ${0}`,
+            ? `${formatFilename(filename)}: ${formatRuleId(ruleId)}: ${SEATBELT_FROZEN}: didn't update max errors ${maxErrorCount} -> ${0}`
+            : `${formatFilename(filename)}: ${formatRuleId(ruleId)}: update max errors ${maxErrorCount} -> ${0}`,
         )
 
         maxErrors.delete(ruleId)
@@ -285,7 +286,8 @@ export class SeatbeltFile {
 
   writeSync() {
     const dataString = this.toDataString()
-    const { dir, base } = nodePath.parse(this.filename)
+    const dir = nodePath.dirname(this.filename)
+    const base = nodePath.basename(this.filename)
     const tempFile = nodePath.join(
       os.tmpdir(),
       `.${base}.wip${process.pid}.${Date.now()}.tmp`,

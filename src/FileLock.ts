@@ -1,4 +1,5 @@
 import { openSync, writeSync, closeSync, constants, rmSync } from "node:fs"
+import { isErrno } from "./errorHanding"
 const { O_CREAT, O_EXCL, O_RDWR } = constants
 
 const waitBuffer = new Int32Array(new SharedArrayBuffer(4))
@@ -14,10 +15,7 @@ export class FileLock {
       this.fd = openSync(this.filename, O_CREAT | O_EXCL | O_RDWR)
       return true
     } catch (e) {
-      if (
-        e instanceof Error &&
-        (e as NodeJS.ErrnoException).code === "EEXIST"
-      ) {
+      if (isErrno(e, "EEXIST")) {
         return false
       }
       throw e

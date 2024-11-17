@@ -2,11 +2,15 @@ import type { Linter } from "eslint"
 import packageJson from "../package.json"
 import { RuleId, SeatbeltFile } from "./SeatbeltFile"
 import {
+  formatFilename,
+  formatRuleId,
+  logStderr,
   SEATBELT_FROZEN,
   SEATBELT_INCREASE,
   SeatbeltArgs,
 } from "./SeatbeltConfig"
 import * as pluginGlobals from "./pluginGlobals"
+import { appendErrorContext } from "./errorHanding"
 
 const { name, version } = packageJson
 
@@ -25,12 +29,14 @@ export const SeatbeltProcessor: Linter.Processor = {
   },
   // takes text of the file and filename
   preprocess(text, filename) {
+    pluginGlobals.onPreprocess(filename)
     // We don't need to do anything here, pass through the data unchanged.
     return [text]
   },
 
   /** Where the action happens. */
   postprocess(messagesPerSection, filename) {
+    pluginGlobals.onPostprocess(filename)
     // takes a Message[][] and filename
     // `messages` argument contains two-dimensional array of Message objects
     // where each top-level array item contains array of lint messages related
@@ -50,30 +56,37 @@ export const SeatbeltProcessor: Linter.Processor = {
     const seatbeltFile = pluginGlobals.getSeatbeltFile(args.seatbeltFile)
     const ruleToErrorCount = countRuleIds(messages)
     const verboseOnce = args.verbose ? createOnce<RuleId>() : () => false
-    const transformed = transformMessages(
-      args,
-      seatbeltFile,
-      filename,
-      messages,
-      ruleToErrorCount,
-      verboseOnce,
-    )
+    try {
+      const transformed = transformMessages(
+        args,
+        seatbeltFile,
+        filename,
+        messages,
+        ruleToErrorCount,
+        verboseOnce,
+      )
 
-    // Ideally we could find a way to batch writes until all linting is finished, but I haven't found a
-    // good way to schedule our code to run after all files but before
-    // ESLint returns to its caller or exits.
-    const additionalMessages = maybeWriteStateUpdate(
-      args,
-      seatbeltFile,
-      filename,
-      ruleToErrorCount,
-    )
+      try {
+        // Ideally we could find a way to batch writes until all linting is finished, but I haven't found a
+        // good way to schedule our code to run after all files but before
+        // ESLint returns to its caller or exits.
+        const additionalMessages = maybeWriteStateUpdate(
+          args,
+          seatbeltFile,
+          filename,
+          ruleToErrorCount,
+        )
 
-    // need to return a one-dimensional array of the messages you want to keep
-    if (additionalMessages) {
-      return transformed.concat(additionalMessages)
-    } else {
-      return transformed
+        if (additionalMessages) {
+          return transformed.concat(additionalMessages)
+        } else {
+          return transformed
+        }
+      } catch (e) {
+        return [...transformed, handleProcessingError(filename, e)]
+      }
+    } catch (e) {
+      return [...messages, handleProcessingError(filename, e)]
     }
   },
 }
@@ -109,8 +122,16 @@ function transformMessages(
     return messages
   }
 
+  const formatLoc = (message: Linter.LintMessage) =>
+    `${formatFilename(filename)}:${message.line}:${message.column}`
+
   return messages.map((message) => {
     if (message.ruleId === null) {
+      SeatbeltArgs.verboseLog(
+        args,
+        () =>
+          `${formatLoc(message)}: cannot transform message with null ruleId`,
+      )
       return message
     }
 
@@ -132,13 +153,6 @@ function transformMessages(
     } else if (errorCount > maxErrorCount) {
       if (allowIncrease) {
         // Rule is allowed to increase from 0 -> any, so it should become a warning.
-        if (verboseOnce(message.ruleId)) {
-          SeatbeltArgs.verboseLog(
-            args,
-            () =>
-              `${filename}: ${message.ruleId}: ${SEATBELT_INCREASE}: ok: ${errorCount} ${pluralErrors(errorCount)} found > max ${maxErrorCount}`,
-          )
-        }
         return messageOverMaxErrorCountButIncreaseAllowed(
           message,
           errorCount,
@@ -153,7 +167,7 @@ function transformMessages(
         SeatbeltArgs.verboseLog(
           args,
           () =>
-            `${filename}: ${message.ruleId}: error: ${errorCount} ${pluralErrors(errorCount)} found > max ${maxErrorCount}`,
+            `${formatFilename(filename)}: ${formatRuleId(message.ruleId)}: error: ${errorCount} ${pluralErrors(errorCount)} found > max ${maxErrorCount}`,
         )
       }
       return messageOverMaxErrorCount(message, errorCount, maxErrorCount)
@@ -164,7 +178,7 @@ function transformMessages(
         SeatbeltArgs.verboseLog(
           args,
           () =>
-            `${filename}: ${message.ruleId}: ok: ${errorCount} ${pluralErrors(errorCount)} found == max ${maxErrorCount}`,
+            `${formatFilename(filename)}: ${formatRuleId(message.ruleId)}: ok: ${errorCount} ${pluralErrors(errorCount)} found == max ${maxErrorCount}`,
         )
       }
 
@@ -213,6 +227,7 @@ function maybeWriteStateUpdate(
     // For now just refresh the file.
     stateFile.readSync()
   }
+
   const ruleToMaxErrorCount = stateFile.getMaxErrors(filename)
   const { removedRules } = stateFile.updateMaxErrors(
     filename,
@@ -333,6 +348,23 @@ function messageFrozenUnderMaxErrorCount(
     severity: 1,
     message: `${message.message}\n${messageFrozenUnderMaxErrorCountText(seatbeltFilename, errorCount, maxErrorCount)}`,
   }
+}
+
+const alreadyModifiedError = new WeakSet<Error>()
+
+function handleProcessingError(
+  filename: string,
+  e: unknown,
+): Linter.LintMessage {
+  if (e instanceof Error && !alreadyModifiedError.has(e)) {
+    alreadyModifiedError.add(e)
+    appendErrorContext(e, `while processing \`${filename}\``)
+    appendErrorContext(
+      e,
+      `this may be a bug in ${name}@${version} or a problem with your setup`,
+    )
+  }
+  throw e
 }
 
 function pluralErrors(count: number) {

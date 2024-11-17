@@ -1,5 +1,6 @@
 import { RuleId } from "./SeatbeltFile"
 import { name } from "../package.json"
+import path from "node:path"
 
 export const SEATBELT_FILE_NAME = "seatbelt.tsv"
 
@@ -11,6 +12,19 @@ export const SEATBELT_PWD = "SEATBELT_PWD"
 export const SEATBELT_DISABLE = "SEATBELT_DISABLE"
 export const SEATBELT_THREADSAFE = "SEATBELT_THREADSAFE"
 export const SEATBELT_VERBOSE = "SEATBELT_VERBOSE"
+
+const ENV_VARS = {
+  SEATBELT_FROZEN,
+  SEATBELT_INCREASE,
+  SEATBELT_KEEP,
+  SEATBELT_FILE,
+  SEATBELT_PWD,
+  SEATBELT_DISABLE,
+  SEATBELT_THREADSAFE,
+  SEATBELT_VERBOSE,
+  CI: "CI",
+  JEST_WORKER_ID: "JEST_WORKER_ID",
+}
 
 /**
  * Configuration for seatbelt can be provided in a few ways:
@@ -323,41 +337,68 @@ export const SeatbeltConfig = {
     }
   },
 
-  fromFallbackEnv(env: FallbackEnv): SeatbeltConfig {
-    return {
-      frozen: Boolean(env.CI),
-      threadsafe: Boolean(env.JEST_WORKER_ID),
+  fromFallbackEnv(
+    env: FallbackEnv,
+    log?: (...message: unknown[]) => void,
+  ): SeatbeltConfig {
+    const config: SeatbeltConfig = {}
+    if (env.CI) {
+      config.frozen = true
+      log?.(`${padVarName("CI")} config.frozen defaults to`, true)
     }
+    if (env.JEST_WORKER_ID) {
+      config.threadsafe = true
+      log?.(
+        `${padVarName("JEST_WORKER_ID")} config.threadsafe defaults to`,
+        true,
+      )
+    }
+    return config
   },
 
-  fromEnvOverrides(env: SeatbeltEnv): SeatbeltConfigWithPwd {
+  fromEnvOverrides(
+    env: SeatbeltEnv,
+    log?: (...message: unknown[]) => void,
+  ): SeatbeltConfigWithPwd {
     const config: SeatbeltConfigWithPwd = {
       pwd: env[SEATBELT_PWD] || process.cwd(),
     }
 
-    const keep = SeatbeltEnv.parseRuleSetEnvVar(env[SEATBELT_KEEP])
-    if (keep !== undefined) {
-      config.keepRules = keep
-    }
-    const increase = SeatbeltEnv.parseRuleSetEnvVar(env[SEATBELT_INCREASE])
-    if (increase !== undefined) {
-      config.allowIncreaseRules = increase
+    const verbose = SeatbeltEnv.readBooleanEnvVar(env[SEATBELT_VERBOSE])
+    if (verbose !== undefined) {
+      config.verbose = verbose
+      log?.(`${padVarName(SEATBELT_VERBOSE)} config.verbose =`, verbose)
     }
     const disable = SeatbeltEnv.readBooleanEnvVar(env[SEATBELT_DISABLE])
     if (disable !== undefined) {
       config.disable = disable
+      log?.(`${padVarName(SEATBELT_DISABLE)} config.disable =`, disable)
     }
     const frozen = SeatbeltEnv.readBooleanEnvVar(env[SEATBELT_FROZEN])
     if (frozen !== undefined) {
       config.frozen = frozen
+      log?.(`${padVarName(SEATBELT_FROZEN)} config.frozen =`, frozen)
+    }
+    const increase = SeatbeltEnv.parseRuleSetEnvVar(env[SEATBELT_INCREASE])
+    if (increase !== undefined) {
+      config.allowIncreaseRules = increase
+      log?.(
+        `${padVarName(SEATBELT_INCREASE)} config.allowIncreaseRules =`,
+        increase,
+      )
+    }
+    const keep = SeatbeltEnv.parseRuleSetEnvVar(env[SEATBELT_KEEP])
+    if (keep !== undefined) {
+      config.keepRules = keep
+      log?.(`${padVarName(SEATBELT_KEEP)} config.keepRules =`, keep)
     }
     const threadsafe = SeatbeltEnv.readBooleanEnvVar(env[SEATBELT_THREADSAFE])
     if (threadsafe !== undefined) {
       config.threadsafe = threadsafe
-    }
-    const verbose = SeatbeltEnv.readBooleanEnvVar(env[SEATBELT_VERBOSE])
-    if (verbose !== undefined) {
-      config.verbose = verbose
+      log?.(
+        `${padVarName(SEATBELT_THREADSAFE)} config.threadsafe =`,
+        threadsafe,
+      )
     }
 
     return config
@@ -393,7 +434,8 @@ export const SeatbeltEnv = {
       return []
     }
 
-    if (value === "ALL") {
+    const lower = value.toLowerCase()
+    if (lower === "all" || lower === "1" || lower === "true") {
       return "all"
     }
 
@@ -419,28 +461,14 @@ export interface FallbackEnv {
   JEST_WORKER_ID?: string
 }
 
-var sharedArgs: SeatbeltArgs | undefined
-
 export const logStdout = (...message: unknown[]) =>
+  // eslint-disable-next-line no-console
   console.log(`[${name}]:`, ...message)
 export const logStderr = (...message: unknown[]) =>
+  // eslint-disable-next-line no-console
   console.error(`[${name}]:`, ...message)
 
 export const SeatbeltArgs = {
-  get currentProcess(): SeatbeltArgs {
-    if (!sharedArgs) {
-      sharedArgs = this.fromConfig(
-        SeatbeltConfig.withEnvOverrides(
-          {},
-          process.env as SeatbeltEnv & FallbackEnv,
-        ),
-      )
-    }
-    return sharedArgs
-  },
-  set currentProcess(args: SeatbeltArgs) {
-    sharedArgs = args
-  },
   fromConfig(config: SeatbeltConfig & { pwd?: string }): SeatbeltArgs {
     const cwd = config.pwd ?? process.cwd()
     return {
@@ -486,4 +514,28 @@ export const SeatbeltArgs = {
     // TODO: go up to parent dir w/ .git?
     return `${cwd}/${SEATBELT_FILE_NAME}`
   },
+}
+
+let envVarMaxLength = 0
+
+export function padVarName(name: string) {
+  envVarMaxLength ||= Math.max(
+    ...Object.values(ENV_VARS).map((name) => name.length),
+  )
+  return `${name}:`.padEnd(envVarMaxLength + 1)
+}
+
+export function formatFilename(filename: string) {
+  const relative = path.relative(
+    process.env[SEATBELT_PWD] ?? process.cwd(),
+    filename,
+  )
+  return relative ? relative : filename
+}
+
+export function formatRuleId(ruleId: RuleId | null) {
+  if (ruleId === null) {
+    return `unknown rule`
+  }
+  return `rule ${ruleId}`
 }
