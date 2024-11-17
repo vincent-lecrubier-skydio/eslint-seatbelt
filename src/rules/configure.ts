@@ -14,7 +14,7 @@ export const configure: Rule.RuleModule = {
       description: `Applies ${name} configuration from ESLint config`,
       url: `https://github.com/justjake/${name}`,
     },
-    schema: SeatbeltConfigSchema,
+    schema: [SeatbeltConfigSchema],
   },
   create(context) {
     const eslintSharedConfigViaShortName = context.settings?.seatbelt as

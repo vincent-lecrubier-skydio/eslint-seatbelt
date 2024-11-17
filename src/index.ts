@@ -40,7 +40,7 @@ const plugin = {
      *   // ... your configs
      * ]
      */
-    enable: createESLint9Config(),
+    enable: undefined as any as ReturnType<typeof createESLint9Config>,
     /**
      * Config preset for ESLint 8 and below.
      *
@@ -57,9 +57,12 @@ const plugin = {
      *
      * https://eslint.org/docs/latest/use/configure/configuration-files-deprecated#using-a-configuration-from-a-plugin
      */
-    "enable-legacy": createLegacyConfig(),
+    "enable-legacy": undefined as any as ReturnType<typeof createLegacyConfig>,
   },
 } satisfies ESLint.Plugin & ESLint.Plugin
+
+plugin.configs.enable = createESLint9Config()
+plugin.configs["enable-legacy"] = createLegacyConfig()
 
 function createESLint9Config() {
   const ownPlugin: ESLint.Plugin = plugin
