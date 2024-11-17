@@ -127,7 +127,7 @@ You may have rule ${configureRuleName} enabled for some files, but not this one.
 export function getSeatbeltFile(filename: string): SeatbeltFile {
   let seatbeltFile = seatbeltFileCache.get(filename)
   if (!seatbeltFile) {
-    seatbeltFile = SeatbeltFile.readSync(filename)
+    seatbeltFile = SeatbeltFile.openSync(filename)
     seatbeltFileCache.set(filename, seatbeltFile)
   }
   return seatbeltFile

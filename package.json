@@ -20,7 +20,8 @@
   },
   "scripts": {
     "build": "./scripts/make-json-schemas.ts && tsc && tsup",
-    "test": "node --test --require tsx/cjs $(find src -name '*.test.ts')"
+    "test": "node --test --require tsx/cjs $(find src -name '*.test.ts')",
+    "lint": "pnpm build && NODE_OPTIONS='--enable-source-maps' eslint ."
   },
   "types": "dist/index.d.ts",
   "import": "./dist/index.mjs",

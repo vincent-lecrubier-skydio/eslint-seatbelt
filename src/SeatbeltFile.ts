@@ -105,6 +105,7 @@ export class SeatbeltFile {
     try {
       return SeatbeltFile.readSync(filename)
     } catch (e) {
+      console.log("open sync error", e)
       if (
         e instanceof Error &&
         (e as NodeJS.ErrnoException).code === "ENOENT"
@@ -264,9 +265,13 @@ export class SeatbeltFile {
   }
 
   readSync() {
-    const nextStateFile = SeatbeltFile.readSync(this.filename)
-    this.data = nextStateFile.data
-    this.changed = false
+    const nextStateFile = SeatbeltFile.openSync(this.filename)
+    if (nextStateFile) {
+      this.data = nextStateFile.data
+      this.changed = false
+      return true
+    }
+    return false
   }
 
   flushChanges() {

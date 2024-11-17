@@ -18,4 +18,9 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   seatbelt.configs.enable,
+  {
+    rules: {
+      "no-console": "error",
+    },
+  },
 )
