@@ -97,4 +97,31 @@ describe("SeatbeltFile", () => {
 
     await fs.promises.rm(tmpDir, { recursive: true })
   })
+
+  test("toJSON() and fromJSON() roundtrip", () => {
+    const file = SeatbeltFile.fromJSON("/test/seatbelt.tsv", {
+      "src/fileA.ts": {
+        "@typescript-eslint/no-explicit-any": 5,
+        "@typescript-eslint/no-unused-vars": 3,
+      },
+      "src/fileB.ts": {
+        "@typescript-eslint/strict-boolean-expressions": 2,
+      },
+    })
+
+    const json = file.toJSON()
+
+    assert.deepStrictEqual(json, {
+      "src/fileA.ts": {
+        "@typescript-eslint/no-explicit-any": 5,
+        "@typescript-eslint/no-unused-vars": 3,
+      },
+      "src/fileB.ts": {
+        "@typescript-eslint/strict-boolean-expressions": 2,
+      },
+    })
+
+    const roundtrippedFile = SeatbeltFile.fromJSON("/test/seatbelt.tsv", json)
+    assert.deepStrictEqual(roundtrippedFile.toJSON(), json)
+  })
 })

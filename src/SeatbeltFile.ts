@@ -2,6 +2,7 @@ import * as os from "node:os"
 import * as fs from "node:fs"
 import * as nodePath from "node:path"
 import { SEATBELT_FROZEN, SEATBELT_KEEP, SeatbeltArgs } from "./SeatbeltConfig"
+import { name } from "../package.json"
 
 export type SourceFileName = string
 export type RuleId = string
@@ -12,6 +13,8 @@ interface SeatbeltFileLine {
   ruleId: RuleId
   maxErrors: number
 }
+
+type SeatbeltFileJson = Record<SourceFileName, Record<RuleId, number>>
 
 function encodeLine(line: SeatbeltFileLine): string {
   const { filename, ruleId, maxErrors } = line
@@ -126,6 +129,16 @@ export class SeatbeltFile {
       }
       fileState.lines.push(line)
     })
+    return new SeatbeltFile(filename, data)
+  }
+
+  static fromJSON(filename: string, json: SeatbeltFileJson): SeatbeltFile {
+    const data = new Map(
+      Object.entries(json).map(([filename, maxErrors]) => [
+        filename,
+        { maxErrors: new Map(Object.entries(maxErrors)), lines: [] },
+      ]),
+    )
     return new SeatbeltFile(filename, data)
   }
 
@@ -275,6 +288,18 @@ export class SeatbeltFile {
     fs.mkdirSync(dir, { recursive: true })
     fs.writeFileSync(tempFile, dataString, "utf8")
     fs.renameSync(tempFile, this.filename)
+  }
+
+  toJSON(): SeatbeltFileJson {
+    return Object.fromEntries(
+      Array.from(this.data.keys()).map((filename) => {
+        const maxErrors = this.getMaxErrors(filename)
+        if (!maxErrors) {
+          throw new Error(`${name} bug: expected errors for existing key`)
+        }
+        return [filename, Object.fromEntries(maxErrors)]
+      }),
+    )
   }
 }
 
