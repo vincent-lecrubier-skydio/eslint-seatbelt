@@ -4,7 +4,6 @@ import { RuleId, SeatbeltFile } from "./SeatbeltFile"
 import {
   formatFilename,
   formatRuleId,
-  logStderr,
   SEATBELT_FROZEN,
   SEATBELT_INCREASE,
   SeatbeltArgs,
@@ -199,10 +198,31 @@ function transformMessages(
   })
 }
 
+function isCountableLintError(
+  message: Linter.LintMessage | Linter.SuppressedLintMessage,
+): message is Linter.LintMessage & { ruleId: string } {
+  if (!message.severity || message.severity < 2) {
+    return false
+  }
+
+  if (
+    ("suppressions" satisfies keyof Linter.SuppressedLintMessage) in message &&
+    message.suppressions.length > 0
+  ) {
+    return false
+  }
+
+  if (!message.ruleId) {
+    return false
+  }
+
+  return true
+}
+
 function countRuleIds(messages: Linter.LintMessage[]): Map<RuleId, number> {
   const ruleToErrorCount = new Map<RuleId, number>()
   messages.forEach((message) => {
-    if (message.ruleId === null) {
+    if (!isCountableLintError(message)) {
       return
     }
     ruleToErrorCount.set(
