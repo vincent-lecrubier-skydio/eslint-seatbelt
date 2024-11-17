@@ -47,7 +47,7 @@
     "src",
     "dist"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "peerDependencies": {
     "@types/eslint": ">=9",
     "eslint": ">=9"
