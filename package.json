@@ -16,7 +16,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/justjake/eslint-seatbelt.git"
+    "url": "git+https://github.com/justjake/eslint-seatbelt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/justjake/eslint-seatbelt/issues"
   },
   "scripts": {
     "build": "./scripts/make-json-schemas.ts && tsc && tsup",

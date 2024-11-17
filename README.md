@@ -1,10 +1,14 @@
 # eslint-seatbelt
 
-Enable ESLint rules and prevent new errors today with a 2-file PR, then gradually fix the existing errors over time. eslint-seatbelt is designed to work like a seatbelt ratchet: it starts loose, but can only get tighter.
+Enable ESLint rules and prevent new errors today with a 2-file PR, then gradually fix the existing errors over time.
+
+eslint-seatbelt is designed to work like a seatbelt [ratchet](https://en.wikipedia.org/wiki/Ratchet_%28device%29): it starts loose, but can only get tighter.
+
+![ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0](./Ratchet_Gear_and_Pawl.gif)
 
 ## Why eslint-seatbelt?
 
-eslint-seatbelt is an open-source re-implementation of a Notion internal tool written originally written by the same author in 2022. It was originally implemented to manage a multi-year migration to React function components, and has since proven invaluable in maintaining our large, fast-moving codebase with hundreds of active contributors.
+eslint-seatbelt is an open-source re-implementation of a Notion internal tool written by the same author in 2022. It was originally implemented to manage a multi-year migration to React function components, and has since proven invaluable in maintaining our large, fast-moving codebase with hundreds of active contributors.
 
 eslint-seatbelt improves on publicly available bulk suppression tools in a few ways:
 
@@ -411,8 +415,9 @@ This project uses `pnpm` for package management.
 - [ ] Integration tests
 - [ ] Git merge driver to automatically resolve eslint.seatbelt.tsv conflicts
 
-## Thanks
+## Thanks & Acknowledgements
 
 - Dedicated to [Nora Tarano](https://github.com/noratarano), who inspired me to write the open-source version. I love you.
 - Thank you to [Ben Kraft](https://github.com/benjaminjkraft) for improvements to the Notion internal version, and for discussing changes for the open-source version.
 - Thank you to Notion Labs, Inc for supporting engineering excellence. If you like this sort of thing, consider [joining us](https://www.notion.com/careers)!
+- `Ratchet_Gear_and_Pawl.gif` by Arglin Kampling - Own work, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=123530838
