@@ -97,7 +97,7 @@ module.exports = {
 
 eslint-seatbelt makes it easy to introduce ESLint to an existing unlinted codebase.
 
-1. Install eslint, eslint-seatbelt, and your favorite ESLint plugins: `npm add --save-dev eslint eslint-seatbelt`.
+1. Install eslint, eslint-seatbelt, and your favorite ESLint plugins.
 1. Configure plugins, rules, and set up eslint-seatbelt [as described above](#setup).
 1. Run `SEATBELT_INCREASE=ALL eslint --fix` to either fix or allow existing errors.
 1. Commit changes.
