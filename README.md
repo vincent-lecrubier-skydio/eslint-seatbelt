@@ -4,7 +4,7 @@ Enable ESLint rules and prevent new errors today with a 2-file PR, then graduall
 
 eslint-seatbelt is designed to work like a seatbelt [ratchet](https://en.wikipedia.org/wiki/Ratchet_%28device%29): it starts loose, but can only get tighter.
 
-![ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0](./Ratchet_Gear_and_Pawl.gif)
+<img src="./logo.svg" alt="ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0" width="400px">
 
 ## Why eslint-seatbelt?
 
