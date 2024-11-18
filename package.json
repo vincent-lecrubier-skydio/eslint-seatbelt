@@ -1,6 +1,6 @@
 {
   "name": "eslint-seatbelt",
-  "version": "0.1.0",
+  "version": "0.0.4",
   "description": "Gradually tighten ESLint rules in your codebase",
   "keywords": [
     "eslint",
@@ -52,8 +52,8 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@types/eslint": ">=9",
-    "eslint": ">=9"
+    "@types/eslint": "*",
+    "eslint": "*"
   },
   "peerDependenciesMeta": {
     "eslint": {

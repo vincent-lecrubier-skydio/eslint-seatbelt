@@ -4,7 +4,7 @@ Enable ESLint rules and prevent new errors today with a 2-file PR, then graduall
 
 eslint-seatbelt is designed to work like a seatbelt [ratchet](https://en.wikipedia.org/wiki/Ratchet_%28device%29): it starts loose, but can only get tighter.
 
-<img src="./logo.svg" alt="ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0" width="400px">
+<img src="./Ratchet_Gear_and_Pawl.gif" alt="ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0" width="400px" />
 
 ## Why eslint-seatbelt?
 
@@ -18,11 +18,11 @@ Other tools require complicated workflows invasive wrapper scripts, some going s
 
 ## Setup
 
-First, install the plugin: `npm add --save-dev eslint-seatbelt`.
-
-Then, add the plugin to your ESLint config:
-
 ### ESLint 9+ flat config
+
+Install the plugin: `npm add --save-dev eslint-seatbelt`.
+
+Then, add to your ESLint config:
 
 ```js
 // eslint.config.mjs
@@ -45,7 +45,11 @@ export default [
 ]
 ```
 
-### Legacy eslintrc format
+### Legacy ESLint versions
+
+Install the plugin: `npm add --save-dev eslint-plugin-eslint-seatbelt@npm:eslint-seatbelt`
+
+Then, add to your ESLint config:
 
 ```js
 // .eslintrc.cjs
