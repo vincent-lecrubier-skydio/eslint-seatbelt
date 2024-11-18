@@ -304,3 +304,7 @@ function getDefault<K, V>(map: Map<K, V>, key: K, defaultValue: () => V) {
   }
   return map.get(key)!
 }
+
+export function isEslintCli() {
+  return getRunContext().runner === "eslint-cli"
+}

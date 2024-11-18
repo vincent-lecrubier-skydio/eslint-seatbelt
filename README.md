@@ -18,11 +18,10 @@ Other tools require complicated workflows invasive wrapper scripts, some going s
 
 ## Setup
 
-### ESLint 9+ flat config
+- ESLint >=8: `npm add --save-dev eslint-seatbelt`
+- ESLint <=7: `npm add --save-dev eslint-plugin-eslint-seatbelt@npm:eslint-seatbelt` (note this aliases the package as `eslint-plugin-eslint-seatbelt` which is required by ESLint <=7)
 
-Install the plugin: `npm add --save-dev eslint-seatbelt`.
-
-Then, add to your ESLint config:
+### ESLint 8+ flat config
 
 ```js
 // eslint.config.mjs
@@ -45,11 +44,7 @@ export default [
 ]
 ```
 
-### Legacy ESLint versions
-
-Install the plugin: `npm add --save-dev eslint-plugin-eslint-seatbelt@npm:eslint-seatbelt`
-
-Then, add to your ESLint config:
+### Legacy eslintrc config
 
 ```js
 // .eslintrc.cjs

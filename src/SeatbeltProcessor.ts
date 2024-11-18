@@ -53,6 +53,9 @@ export const SeatbeltProcessor: Linter.Processor = {
     }
 
     const seatbeltFile = pluginGlobals.getSeatbeltFile(args.seatbeltFile)
+    if (args.threadsafe || !pluginGlobals.isEslintCli()) {
+      seatbeltFile.readSync()
+    }
     const ruleToErrorCount = countRuleIds(messages)
     const verboseOnce = args.verbose ? createOnce<RuleId>() : () => false
     try {
@@ -121,15 +124,12 @@ function transformMessages(
     return messages
   }
 
-  const formatLoc = (message: Linter.LintMessage) =>
-    `${formatFilename(filename)}:${message.line}:${message.column}`
-
   return messages.map((message) => {
     if (message.ruleId === null) {
       SeatbeltArgs.verboseLog(
         args,
         () =>
-          `${formatLoc(message)}: cannot transform message with null ruleId`,
+          `${formatFilename(filename)}:${message.line}:${message.column}: cannot transform message with null ruleId`,
       )
       return message
     }

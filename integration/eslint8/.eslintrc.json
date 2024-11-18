@@ -1,0 +1,7 @@
+{
+  "plugins": ["eslint-seatbelt"],
+  "extends": ["plugin:eslint-seatbelt/enable-legacy"],
+  "rules": {
+    "no-console": "error"
+  }
+}
