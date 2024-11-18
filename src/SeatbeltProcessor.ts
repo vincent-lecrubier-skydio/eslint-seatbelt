@@ -134,6 +134,10 @@ function transformMessages(
       return message
     }
 
+    if (!isCountableLintError(message)) {
+      return message
+    }
+
     const errorCount = ruleToErrorCount.get(message.ruleId)
     if (errorCount === undefined) {
       throw new Error(

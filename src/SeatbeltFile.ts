@@ -1,6 +1,6 @@
 import * as os from "node:os"
 import * as fs from "node:fs"
-import * as nodePath from "node:path"
+import path, * as nodePath from "node:path"
 import {
   formatFilename,
   formatRuleId,
@@ -21,7 +21,10 @@ interface SeatbeltFileLine {
   maxErrors: number
 }
 
-export type SeatbeltFileJson = Record<SourceFileName, Record<RuleId, number>>
+export type SeatbeltFileJson = {
+  filename: SourceFileName
+  data: Record<SourceFileName, Record<RuleId, number>>
+}
 
 function encodeLine(line: SeatbeltFileLine): string {
   const { filename, ruleId, maxErrors } = line
@@ -110,7 +113,7 @@ export class SeatbeltFile {
       return SeatbeltFile.readSync(filename)
     } catch (e) {
       if (isErrno(e, "ENOENT")) {
-        return new SeatbeltFile(filename, new Map())
+        return new SeatbeltFile(filename, new Map(), DEFAULT_FILE_HEADER)
       }
       throw e
     }
@@ -139,32 +142,36 @@ export class SeatbeltFile {
     return new SeatbeltFile(filename, data, comments.trim())
   }
 
-  static fromJSON(filename: string, json: SeatbeltFileJson): SeatbeltFile {
+  static fromJSON(json: SeatbeltFileJson): SeatbeltFile {
     const data = new Map(
-      Object.entries(json).map(([filename, maxErrors]) => [
+      Object.entries(json.data).map(([filename, maxErrors]) => [
         filename,
         { maxErrors: new Map(Object.entries(maxErrors)), lines: [] },
       ]),
     )
-    return new SeatbeltFile(filename, data)
+    return new SeatbeltFile(json.filename, data)
   }
+
+  public changed = false
 
   constructor(
     public filename: string,
     protected data: Map<SourceFileName, SeatbeltStateFileData>,
-    public readonly comments: string = DEFAULT_FILE_HEADER,
-  ) {}
+    public readonly comments: string = "",
+  ) {
+    this.filename = path.resolve(this.filename)
+  }
 
-  public changed = false
-
-  filenames(): IterableIterator<SourceFileName> {
-    return this.data.keys()
+  *filenames(): IterableIterator<SourceFileName> {
+    for (const filename of this.data.keys()) {
+      yield this.toAbsolutePath(filename)
+    }
   }
 
   getMaxErrors(
     filename: SourceFileName,
   ): ReadonlyMap<RuleId, number> | undefined {
-    const fileState = this.data.get(filename)
+    const fileState = this.data.get(this.toRelativePath(filename))
     if (!fileState) {
       return undefined
     }
@@ -181,8 +188,9 @@ export class SeatbeltFile {
     let increasedRulesCount = 0
     let decreasedRulesCount = 0
     this.getMaxErrors(filename)
+    const relativeFilename = this.toRelativePath(filename)
     const maxErrors =
-      this.data.get(filename)?.maxErrors ?? new Map<RuleId, number>()
+      this.data.get(relativeFilename)?.maxErrors ?? new Map<RuleId, number>()
 
     ruleToErrorCount.forEach((errorCount, ruleId) => {
       const maxErrorCount = maxErrors.get(ruleId) ?? 0
@@ -242,11 +250,11 @@ export class SeatbeltFile {
       decreasedRulesCount > 0 ||
       removedRules.size > 0
     if (changed && !args.frozen) {
-      const file = this.data.get(filename)
+      const file = this.data.get(relativeFilename)
       if (file) {
         file.maxErrors = maxErrors
       } else {
-        this.data.set(filename, {
+        this.data.set(relativeFilename, {
           maxErrors,
           lines: [],
         })
@@ -276,7 +284,11 @@ export class SeatbeltFile {
       })
     })
     lines.sort()
-    return this.comments + "\n\n" + lines.join("")
+    if (this.comments) {
+      return this.comments + "\n\n" + lines.join("")
+    } else {
+      return lines.join("")
+    }
   }
 
   readSync() {
@@ -312,7 +324,7 @@ export class SeatbeltFile {
   }
 
   toJSON(): SeatbeltFileJson {
-    return Object.fromEntries(
+    const data = Object.fromEntries(
       Array.from(this.data.keys()).map((filename) => {
         const maxErrors = this.getMaxErrors(filename)
         if (!maxErrors) {
@@ -321,6 +333,21 @@ export class SeatbeltFile {
         return [filename, Object.fromEntries(maxErrors)]
       }),
     )
+    return { filename: this.filename, data }
+  }
+
+  toRelativePath(filename: string) {
+    if (!nodePath.isAbsolute(filename)) {
+      return filename
+    }
+    return nodePath.relative(nodePath.dirname(this.filename), filename)
+  }
+
+  toAbsolutePath(filename: string) {
+    if (nodePath.isAbsolute(filename)) {
+      return filename
+    }
+    return nodePath.resolve(nodePath.dirname(this.filename), filename)
   }
 }
 

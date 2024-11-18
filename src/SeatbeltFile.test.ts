@@ -62,11 +62,11 @@ describe("SeatbeltFile", () => {
         "@typescript-eslint/no-explicit-any": 3,
       }),
     )
-    const changed = file.updateMaxErrors("src/file.ts", args, newCounts)
+    const changed = file.updateMaxErrors("/test/src/file.ts", args, newCounts)
     assert.strictEqual(changed.decreasedRulesCount, 1)
     assert.strictEqual(file.changed, true)
 
-    const maxErrors = file.getMaxErrors("src/file.ts")
+    const maxErrors = file.getMaxErrors("/test/src/file.ts")
     assert.ok(maxErrors)
     assert.strictEqual(maxErrors.get("@typescript-eslint/no-explicit-any"), 3)
     assert.strictEqual(
@@ -99,32 +99,35 @@ describe("SeatbeltFile", () => {
   })
 
   test("toJSON() and fromJSON() roundtrip", () => {
-    const file = SeatbeltFile.fromJSON("/test/eslint.seatbelt.tsv", {
-      "src/fileA.ts": {
-        "@typescript-eslint/no-explicit-any": 5,
-        "@typescript-eslint/no-unused-vars": 3,
-      },
-      "src/fileB.ts": {
-        "@typescript-eslint/strict-boolean-expressions": 2,
+    const file = SeatbeltFile.fromJSON({
+      filename: "/test/eslint.seatbelt.tsv",
+      data: {
+        "src/fileA.ts": {
+          "@typescript-eslint/no-explicit-any": 5,
+          "@typescript-eslint/no-unused-vars": 3,
+        },
+        "src/fileB.ts": {
+          "@typescript-eslint/strict-boolean-expressions": 2,
+        },
       },
     })
 
     const json = file.toJSON()
 
     assert.deepStrictEqual(json, {
-      "src/fileA.ts": {
-        "@typescript-eslint/no-explicit-any": 5,
-        "@typescript-eslint/no-unused-vars": 3,
-      },
-      "src/fileB.ts": {
-        "@typescript-eslint/strict-boolean-expressions": 2,
+      filename: "/test/eslint.seatbelt.tsv",
+      data: {
+        "src/fileA.ts": {
+          "@typescript-eslint/no-explicit-any": 5,
+          "@typescript-eslint/no-unused-vars": 3,
+        },
+        "src/fileB.ts": {
+          "@typescript-eslint/strict-boolean-expressions": 2,
+        },
       },
     })
 
-    const roundtrippedFile = SeatbeltFile.fromJSON(
-      "/test/eslint.seatbelt.tsv",
-      json,
-    )
+    const roundtrippedFile = SeatbeltFile.fromJSON(json)
     assert.deepStrictEqual(roundtrippedFile.toJSON(), json)
   })
 })
