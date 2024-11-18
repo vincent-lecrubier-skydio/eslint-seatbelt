@@ -1,6 +1,6 @@
 {
   "name": "eslint-seatbelt",
-  "version": "0.0.6",
+  "version": "0.1.1",
   "description": "Gradually tighten ESLint rules in your codebase",
   "keywords": [
     "eslint",
