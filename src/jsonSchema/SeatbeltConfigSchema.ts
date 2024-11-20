@@ -72,6 +72,11 @@ export const SeatbeltConfigSchema = {
         },
       ],
     },
+    root: {
+      description:
+        "Repository or project root.\nBy default this is inferred from `seatbeltFile` by checking ancestor directories for `.git`.\nUsed for editor integration to disable seatbelt during git actions like rebase or merge.\n\nThis can be set with the `SEATBELT_ROOT` environment variable.",
+      type: "string",
+    },
   },
   $schema: "http://json-schema.org/draft-07/schema#",
 } satisfies Schema

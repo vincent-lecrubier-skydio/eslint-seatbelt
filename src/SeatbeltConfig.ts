@@ -1,6 +1,7 @@
 import { RuleId } from "./SeatbeltFile"
 import { name } from "../package.json"
 import path from "node:path"
+import { findRepoRoot } from "./repoIntegration"
 
 export const SEATBELT_FILE_NAME = "eslint.seatbelt.tsv"
 
@@ -12,6 +13,7 @@ export const SEATBELT_PWD = "SEATBELT_PWD"
 export const SEATBELT_DISABLE = "SEATBELT_DISABLE"
 export const SEATBELT_THREADSAFE = "SEATBELT_THREADSAFE"
 export const SEATBELT_VERBOSE = "SEATBELT_VERBOSE"
+export const SEATBELT_ROOT = "SEATBELT_ROOT"
 
 const ENV_VARS = {
   SEATBELT_FROZEN,
@@ -22,6 +24,7 @@ const ENV_VARS = {
   SEATBELT_DISABLE,
   SEATBELT_THREADSAFE,
   SEATBELT_VERBOSE,
+  SEATBELT_ROOT,
   CI: "CI",
   JEST_WORKER_ID: "JEST_WORKER_ID",
 }
@@ -229,6 +232,7 @@ export interface SeatbeltConfig {
    *     }
    *   }
    * ]
+   * ```
    */
   frozen?: boolean
   /**
@@ -253,6 +257,7 @@ export interface SeatbeltConfig {
    *     }
    *   }
    * ]
+   * ```
    */
   disable?: boolean
   /**
@@ -319,6 +324,15 @@ export interface SeatbeltConfig {
    * The default logger when set to `true` is `console.error`.
    */
   verbose?: boolean | "stdout" | "stderr" | ((...message: unknown[]) => void)
+
+  /**
+   * Repository or project root.
+   * By default this is inferred from `seatbeltFile` by checking ancestor directories for `.git`.
+   * Used for editor integration to disable seatbelt during git actions like rebase or merge.
+   *
+   * This can be set with the `SEATBELT_ROOT` environment variable.
+   */
+  root?: string
 }
 
 export interface SeatbeltConfigWithPwd extends SeatbeltConfig {
@@ -400,6 +414,11 @@ export const SeatbeltConfig = {
         threadsafe,
       )
     }
+    const root = env[SEATBELT_ROOT]
+    if (root) {
+      config.root = root
+      log?.(`${padVarName(SEATBELT_ROOT)} config.root =`, root)
+    }
 
     return config
   },
@@ -422,6 +441,7 @@ export interface SeatbeltEnv {
   [SEATBELT_DISABLE]?: string
   [SEATBELT_FROZEN]?: string
   [SEATBELT_VERBOSE]?: string
+  [SEATBELT_ROOT]?: string
 }
 
 export const SeatbeltEnv = {
@@ -471,8 +491,13 @@ export const logStderr = (...message: unknown[]) =>
 export const SeatbeltArgs = {
   fromConfig(config: SeatbeltConfig & { pwd?: string }): SeatbeltArgs {
     const cwd = config.pwd ?? process.cwd()
+    const seatbeltFile =
+      config.seatbeltFile ?? SeatbeltArgs.findSeatbeltFile(cwd)
+    const root =
+      config.root ?? findRepoRoot(seatbeltFile) ?? path.dirname(seatbeltFile)
     return {
-      seatbeltFile: config.seatbeltFile ?? SeatbeltArgs.findSeatbeltFile(cwd),
+      seatbeltFile,
+      root,
       keepRules:
         typeof config.keepRules === "string"
           ? config.keepRules

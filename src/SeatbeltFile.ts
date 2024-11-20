@@ -153,13 +153,15 @@ export class SeatbeltFile {
   }
 
   public changed = false
+  private readonly dirname: string
 
   constructor(
-    public filename: string,
+    public readonly filename: string,
     protected data: Map<SourceFileName, SeatbeltStateFileData>,
     public readonly comments: string = "",
   ) {
     this.filename = path.resolve(this.filename)
+    this.dirname = path.dirname(this.filename)
   }
 
   *filenames(): IterableIterator<SourceFileName> {
@@ -177,6 +179,27 @@ export class SeatbeltFile {
     }
     fileState.maxErrors ??= parseMaxErrors(fileState.lines)
     return fileState.maxErrors
+  }
+
+  removeFile(filename: SourceFileName, args: SeatbeltArgs) {
+    const relativeFilename = this.toRelativePath(filename)
+    if (!this.data.has(relativeFilename)) {
+      return false
+    }
+
+    SeatbeltArgs.verboseLog(args, () =>
+      args.frozen
+        ? `${formatFilename(filename)}: ${SEATBELT_FROZEN}: didn't remove max errors`
+        : `${formatFilename(filename)}: remove max errors`,
+    )
+
+    if (args.frozen) {
+      return false
+    }
+
+    this.data.delete(relativeFilename)
+    this.changed = true
+    return true
   }
 
   updateMaxErrors(
@@ -340,14 +363,14 @@ export class SeatbeltFile {
     if (!nodePath.isAbsolute(filename)) {
       return filename
     }
-    return nodePath.relative(nodePath.dirname(this.filename), filename)
+    return nodePath.relative(this.dirname, filename)
   }
 
   toAbsolutePath(filename: string) {
     if (nodePath.isAbsolute(filename)) {
       return filename
     }
-    return nodePath.resolve(nodePath.dirname(this.filename), filename)
+    return nodePath.resolve(this.dirname, filename)
   }
 }
 

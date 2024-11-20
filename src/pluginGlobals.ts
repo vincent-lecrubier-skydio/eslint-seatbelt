@@ -14,13 +14,14 @@ import {
 } from "./SeatbeltConfig"
 import { SeatbeltFile } from "./SeatbeltFile"
 import { name, version } from "../package.json"
+import fs from "node:fs"
 
 let ANY_CONFIG_DISABLED = false
 let LAST_VERBOSE_ARGS: SeatbeltArgs | undefined
 const VERBOSE_SEATBELT_FILES = new Set<string>()
+const CLI_ARGS = new Set<SeatbeltArgs>()
 
 const EMPTY_CONFIG: SeatbeltConfig = {}
-
 const argsCache = new WeakMap<SeatbeltConfig, SeatbeltArgs>()
 const seatbeltFileCache = new Map<string, SeatbeltFile>()
 const mergedConfigCache = new WeakMap<
@@ -125,6 +126,9 @@ function logConfig(args: SeatbeltArgs, baseConfig: SeatbeltConfig) {
 export function pushFileArgs(filename: string, args: SeatbeltArgs) {
   lastLintedFile = { filename, args }
   temporaryFileArgs.set(filename, args)
+  if (isEslintCli()) {
+    CLI_ARGS.add(args)
+  }
 }
 
 export function popFileArgs(filename: string): SeatbeltArgs {
@@ -201,21 +205,18 @@ function getRunContext(): RunContext {
 const pluginStats = {
   processorRuns: 0,
   ruleRuns: 0,
+  removedFiles: 0,
 }
 
 export function incrementStat(key: keyof typeof pluginStats, value = 1) {
   pluginStats[key] += value
 }
 
-let lastProcessedFilename: string | undefined
-
 export function onPreprocess(_filename: string) {
   incrementStat("processorRuns")
 }
 
-export function onPostprocess(filename: string) {
-  lastProcessedFilename = filename
-}
+export function onPostprocess(_filename: string) {}
 
 export function onConfigureRule(_filename: string) {
   incrementStat("ruleRuns")
@@ -230,7 +231,7 @@ export function registerEslintCliExitHandler() {
   }
   didRegisterProcessExitHandler = true
   const runContext = detectRunContext()
-  if (runContext.runner === "eslint-cli") {
+  if (isEslintCli()) {
     process.once("exit", () => handleEslintCliExit(runContext))
   }
 }
@@ -241,51 +242,79 @@ function handleEslintCliExit(_runContext: RunContext) {
     return
   }
 
-  if (LAST_VERBOSE_ARGS) {
-    const log = LAST_VERBOSE_ARGS
-      ? SeatbeltArgs.getLogger(LAST_VERBOSE_ARGS)
-      : logStderr
+  cleanUpRemovedFiles()
 
-    const seatbeltFiles = Array.from(VERBOSE_SEATBELT_FILES).map(
-      SeatbeltFile.openSync,
-    )
-    const ruleInfo = new Map<string, { allowed: number; inFiles: number }>()
-    const totalInfo = { allowed: 0, inFiles: 0 }
-    for (const seatbeltFile of seatbeltFiles) {
-      for (const filename of seatbeltFile.filenames()) {
-        const maxErrors = seatbeltFile.getMaxErrors(filename)
-        if (maxErrors) {
-          for (const [ruleId, errorCount] of maxErrors.entries()) {
-            const info = getDefault(ruleInfo, ruleId, () => ({
-              allowed: 0,
-              inFiles: 0,
-            }))
-            info.allowed += errorCount
-            info.inFiles++
-            totalInfo.allowed += errorCount
-            totalInfo.inFiles++
-          }
+  if (LAST_VERBOSE_ARGS) {
+    logEslintRunSummary()
+  }
+}
+
+function cleanUpRemovedFiles() {
+  for (const args of CLI_ARGS) {
+    const seatbeltFile = getSeatbeltFile(args.seatbeltFile)
+    // TODO: args.threadsafe
+    seatbeltFile.readSync()
+    for (const filename of seatbeltFile.filenames()) {
+      if (!fs.existsSync(filename)) {
+        seatbeltFile.removeFile(filename, args)
+        incrementStat("removedFiles")
+      }
+    }
+    seatbeltFile.writeSync()
+  }
+}
+
+function logEslintRunSummary() {
+  const log = LAST_VERBOSE_ARGS
+    ? SeatbeltArgs.getLogger(LAST_VERBOSE_ARGS)
+    : logStderr
+
+  const seatbeltFiles = Array.from(VERBOSE_SEATBELT_FILES).map(getSeatbeltFile)
+  const ruleInfo = new Map<string, { allowed: number; inFiles: number }>()
+  const totalInfo = { allowed: 0, inFiles: 0 }
+  for (const seatbeltFile of seatbeltFiles) {
+    for (const filename of seatbeltFile.filenames()) {
+      const maxErrors = seatbeltFile.getMaxErrors(filename)
+      if (maxErrors) {
+        for (const [ruleId, errorCount] of maxErrors.entries()) {
+          const info = getDefault(ruleInfo, ruleId, () => ({
+            allowed: 0,
+            inFiles: 0,
+          }))
+          info.allowed += errorCount
+          info.inFiles++
+          totalInfo.allowed += errorCount
+          totalInfo.inFiles++
         }
       }
     }
-
-    const ruleStatsMessages: string[] = []
-    ruleStatsMessages.push(
-      `${SEATBELT_VERBOSE}: ${name}@${version} checked ${pluginStats.processorRuns} source files\n`,
-    )
-    ruleStatsMessages.push(
-      seatbeltFiles.length === 1
-        ? `Allowed errors in seatbelt file:\n`
-        : `Allowed errors in ${seatbeltFiles.length} seatbelt files:\n`,
-    )
-    for (const ruleId of Array.from(ruleInfo.keys()).sort()) {
-      const info = ruleInfo.get(ruleId)!
-      ruleStatsMessages.push(
-        `  ${ruleId}: ${info.allowed} allowed in ${info.inFiles} source files\n`,
-      )
-    }
-    log(ruleStatsMessages.join(""))
   }
+
+  const ruleStatsMessages: string[] = []
+  ruleStatsMessages.push(
+    `${SEATBELT_VERBOSE}: ${name}@${version} checked ${pluginStats.processorRuns} source files\n`,
+  )
+
+  const seatbeltFileCount =
+    seatbeltFiles.length === 1
+      ? "seatbelt file"
+      : `${seatbeltFiles.length} seatbelt files`
+
+  if (pluginStats.removedFiles > 0) {
+    ruleStatsMessages.push(
+      `Removed ${pluginStats.removedFiles} non-existent source files from ${seatbeltFileCount}\n`,
+    )
+  }
+  ruleStatsMessages.push(`Allowed errors in ${seatbeltFileCount}:\n`)
+  for (const ruleId of Array.from(ruleInfo.keys()).sort()) {
+    const info = ruleInfo.get(ruleId)!
+    const sourceFilesCount =
+      info.inFiles === 1 ? "1 source file" : `${info.inFiles} source files`
+    ruleStatsMessages.push(
+      `  ${ruleId}: ${info.allowed} allowed in ${sourceFilesCount}\n`,
+    )
+  }
+  log(ruleStatsMessages.join(""))
 }
 
 export function hasProcessorRun() {
