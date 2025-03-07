@@ -6,9 +6,10 @@ eslint-seatbelt is designed to work like a seatbelt [ratchet](https://en.wikiped
 
 <img src="./Ratchet_Gear_and_Pawl.gif" alt="ratchet device illustration by Arglin Kampling - Own work, CC BY-SA 4.0" width="400px" />
 
+
 ## Why eslint-seatbelt?
 
-eslint-seatbelt is an open-source re-implementation of a Notion internal tool written by the same author in 2022. It was originally implemented to manage a multi-year migration to React function components, and has since proven invaluable in maintaining our large, fast-moving codebase with hundreds of active contributors.
+eslint-seatbelt is an open-source re-implementation of a Notion internal tool written by the same author in 2022. It was originally implemented to manage a multi-year migration to React function components, and has since proven invaluable in maintaining our large, fast-moving codebase with hundreds of active contributors. [Read more on the Notion blog](https://www.notion.com/blog/how-we-evolved-our-code-notions-ratcheting-system-using-custom-eslint-rules).
 
 eslint-seatbelt improves on publicly available bulk suppression tools in a few ways:
 
