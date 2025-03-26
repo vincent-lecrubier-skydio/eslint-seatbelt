@@ -336,14 +336,8 @@ export class SeatbeltFile {
   writeSync() {
     const dataString = this.toDataString()
     const dir = nodePath.dirname(this.filename)
-    const base = nodePath.basename(this.filename)
-    const tempFile = nodePath.join(
-      os.tmpdir(),
-      `.${base}.wip${process.pid}.${Date.now()}.tmp`,
-    )
     fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(tempFile, dataString, "utf8")
-    fs.renameSync(tempFile, this.filename)
+    fs.writeFileSync(this.filename, dataString, "utf8")
   }
 
   toJSON(): SeatbeltFileJson {
